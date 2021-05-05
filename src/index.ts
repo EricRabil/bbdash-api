@@ -6,13 +6,21 @@ import { APIResponse, APIError, ErrorResponse } from "./util/express";
 import { DiscordIntegration } from "./util/discord-integration";
 import { Feedback } from "./schema/Feedback";
 import rateLimit from "express-rate-limit";
+import makeDebug from "debug";
 
 const MAX_REQUESTS_PER_MINUTE = +process.env.MAX_REQUESTS_PER_MINUTE! || 1;
+const APP_PORT = +process.env.BBA_PORT! || 9222;
+
+const debug = makeDebug("bbdash-api");
+
+debug("Setting up Discord");
 
 setup({
     dotenv: true,
     plugins: [new DiscordIntegration]
 }).then(async () => {
+    debug("Setting up API");
+
     const app = express();
 
     const OK = APIResponse.status(200).sender;
@@ -42,6 +50,7 @@ setup({
             err.response.send(res);
         } else {
             ErrorResponse.status(500).message("Internal server error").send(res);
+            console.error(err);
         }
     });
 
@@ -49,7 +58,7 @@ setup({
         ErrorResponse.status(404).message("Unknown route.").send(res);
     });
 
-    app.listen(+process.env.BBA_PORT! || 9222, () => {
-        console.log("alive")
+    app.listen(APP_PORT, () => {
+        debug(`Listening on port ${APP_PORT}`)
     });
 });
