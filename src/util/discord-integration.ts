@@ -48,7 +48,10 @@ export class DiscordIntegration extends BaseDPlugin {
         const { feedback, id } = await this.resolveFeedbackData(reaction.message.id, true) || {};
 
         if (!feedback || !id) return;
-        if (reaction.emoji.name !== APPROVE_EMOJI) return;
+        if (reaction.emoji.name !== APPROVE_EMOJI) {
+            await this.purge(id);
+            return;
+        }
 
         // send it to github!
         await this.octokit.issues.create({
@@ -57,6 +60,13 @@ export class DiscordIntegration extends BaseDPlugin {
             repo: process.env.GITHUB_REPO_NAME!,
             body: `Feedback ID \`${id}\`\n---\n${feedback.feedback}`
         });
+    }
+
+    async purge(rawFeedbackID: string) {
+        await Promise.all([
+            this.unset(feedbackKey(rawFeedbackID)),
+            this.unset(feedbackEmailKey(rawFeedbackID))
+        ]);
     }
 
     async resolveFeedbackData(messageID: string, clear: boolean = false): Promise<{ feedback: FeedbackData | null; id: string | null; } | null> {

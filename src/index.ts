@@ -5,6 +5,9 @@ import { setup } from "discord-botkit";
 import { APIResponse, APIError, ErrorResponse } from "./util/express";
 import { DiscordIntegration } from "./util/discord-integration";
 import { Feedback } from "./schema/Feedback";
+import rateLimit from "express-rate-limit";
+
+const MAX_REQUESTS_PER_MINUTE = +process.env.MAX_REQUESTS_PER_MINUTE! || 1;
 
 setup({
     dotenv: true,
@@ -13,12 +16,19 @@ setup({
     const app = express();
 
     const OK = APIResponse.status(200).sender;
+    const SLOW_DOWN = ErrorResponse.status(429).message("Too many requests, please try again later.").sender;
+
+    app.set("trust proxy", true);
 
     app.use(express.urlencoded({ extended: true }));
     app.use(express.json());
     app.use(cors());
 
-    app.post("/api/v1/feedback", async (req, res) => {
+    app.post("/api/v1/feedback", rateLimit({
+        windowMs: 1 * 60 * 1000,
+        max: MAX_REQUESTS_PER_MINUTE,
+        handler: (_, res) => SLOW_DOWN(res)
+    }), async (req, res) => {
         const { email, title, feedback } = Feedback.assert(req.body);
 
         await DiscordIntegration.shared.sendFeedback({ email, title, feedback });
