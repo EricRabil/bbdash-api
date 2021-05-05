@@ -58,7 +58,7 @@ export class DiscordIntegration extends BaseDPlugin {
             title: feedback.title,
             owner: process.env.GITHUB_REPO_OWNER!,
             repo: process.env.GITHUB_REPO_NAME!,
-            body: `Feedback ID \`${id}\`\n---\n${feedback.feedback}`
+            body: `${feedback.feedback}\n\n##### Feedback ID \`${id}\``
         });
     }
 
