@@ -82,6 +82,7 @@ export class APIResponse extends BaseResponse<NormalResponseProps> {
 
 export interface ErrorResponseProps extends BaseResponseProps {
     message?: string;
+    extra?: object;
 }
 
 export class ErrorResponse extends BaseResponse<ErrorResponseProps> {
@@ -93,8 +94,16 @@ export class ErrorResponse extends BaseResponse<ErrorResponseProps> {
         return new this({ status: 500, message });
     }
 
+    static extra(extra?: object) {
+        return new this({ status: 500, extra });
+    }
+
     message(message?: string) {
         return this.edited({ message });
+    }
+
+    extra(extra?: object) {
+        return this.edited({ extra });
     }
 
     resolvedJSON(): ResponseBody<null, true> {
@@ -102,8 +111,20 @@ export class ErrorResponse extends BaseResponse<ErrorResponseProps> {
             success: false,
             error: {
                 code: this.props.status,
-                message: this.props.message
+                message: this.props.message,
+                ...(this.props.extra || {})
             }
         }
+    }
+
+    get error(): APIError {
+        return new APIError(this);
+    }
+}
+
+export class APIError extends Error {
+    constructor(public response: ErrorResponse) {
+        super();
+        this.name = "APIError";
     }
 }

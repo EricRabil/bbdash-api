@@ -1,11 +1,10 @@
-import dotenv from "dotenv";
 import express from "express";
+import "express-async-errors";
 import cors from "cors";
 import { setup } from "discord-botkit";
-import { APIResponse, ErrorResponse } from "./util/express";
+import { APIResponse, APIError, ErrorResponse } from "./util/express";
 import { DiscordIntegration } from "./util/discord-integration";
-
-dotenv.config();
+import { Feedback } from "./schema/Feedback";
 
 setup({
     dotenv: true,
@@ -20,11 +19,19 @@ setup({
     app.use(cors());
 
     app.post("/api/v1/feedback", async (req, res) => {
-        const { email, title, feedback } = req.body;
+        const { email, title, feedback } = Feedback.assert(req.body);
 
         await DiscordIntegration.shared.sendFeedback({ email, title, feedback });
 
         OK(res);
+    });
+
+    app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+        if (err instanceof APIError) {
+            err.response.send(res);
+        } else {
+            ErrorResponse.status(500).message("Internal server error").send(res);
+        }
     });
 
     app.use((req, res) => {
