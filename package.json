@@ -8,7 +8,8 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "build": "tsc -p ."
+    "build": "tsc -p .",
+    "watch": "yarn build --watch"
   },
   "dependencies": {
     "@octokit/auth-app": "^3.4.0",
