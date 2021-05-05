@@ -18,7 +18,7 @@ setup({
     const OK = APIResponse.status(200).sender;
     const SLOW_DOWN = ErrorResponse.status(429).message("Too many requests, please try again later.").sender;
 
-    app.set("trust proxy", true);
+    app.enable("trust proxy");
 
     app.use(express.urlencoded({ extended: true }));
     app.use(express.json());
@@ -27,7 +27,8 @@ setup({
     app.post("/api/v1/feedback", rateLimit({
         windowMs: 1 * 60 * 1000,
         max: MAX_REQUESTS_PER_MINUTE,
-        handler: (_, res) => SLOW_DOWN(res)
+        handler: (_, res) => SLOW_DOWN(res),
+        keyGenerator: (req) => req.headers['cf-connecting-ip']?.[0] || req.ip
     }), async (req, res) => {
         const { email, title, feedback } = Feedback.assert(req.body);
 
